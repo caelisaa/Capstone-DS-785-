@@ -1,0 +1,18 @@
+Sentiment,level_1,Theme
+Mixed or Neutral,Theme 1,deterioration
+Mixed or Neutral,Theme 2,"parking, access"
+Mixed or Neutral,Theme 3,unreasonablefee / poorservice
+Negative,Theme 1,dissatisfied (experience)
+Negative,Theme 2,"frustration, aroma, recognition"
+Negative,Theme 3,overcharge
+Negative,Theme 4,unsanitary/dirtiness
+Positive but Critical,Theme 1,difficulty (parking)
+Slightly Negative,Theme 1,dirty
+Slightly Negative,Theme 2,disappointment (core emotion) or continental breakfast (topic)
+Slightly Negative,Theme 3,"fees, costs"
+Slightly Negative,Theme 4,inconvenience
+Slightly Negative,Theme 5,late/cleanliness/mishandled services
+Very Negative,Theme 1,disappointment
+Very Negative,Theme 2,dissatisfaction (with service)
+Very Negative,Theme 3,full (parking lot) / unavailable (spaces)
+Very Positive,Theme 1,awesome (team)

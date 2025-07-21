@@ -1,0 +1,7 @@
+Sentiment,Theme 1,Theme 2,Theme 3,Theme 4,Theme 5,Theme 6
+Mixed or Neutral,deterioration,discomfort/inconvenience (heating/food quality),lack (of) hot water,"parking, access",rush,unreasonablefee / poorservice
+Negative,dissatisfied (experience),"frustration, aroma, recognition",overcharge,unsanitary/dirtiness,,
+Positive but Critical,poor service,accommodation issues,children-restriction,costly/average quality,difficulty (parking),dissatisfaction (with breakfast)
+Slightly Negative,comfortable-slowdrains,dirty,disappointment (core emotion) or continental breakfast (topic),"fees, costs",inconvenience,late/cleanliness/mishandled services
+Very Negative,collision/damage,disappointment,dissatisfaction (with service),dissatisfied service/facilities,full (parking lot) / unavailable (spaces),hotel (heating/breakfast)
+Very Positive,disappointment,adjacent rooms (noise),awesome (team),"cleanliness (pool area), food options (snacks)",coffee (decaffeinated unexpectedly),comfort

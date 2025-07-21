@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "introdl"
+version = "1.0"
+description = "Introductory Deep Learning Package"
+authors = [
+    { name = "Your Name", email = "you@example.com" }
+]
+dependencies = [
+    "accelerate",
+    "bert_score",
+    "bertviz",
+    "bitsandbytes>=0.45.3",
+    "datasets",
+    "evaluate",
+    "gliner",
+    "google-genai",
+    "IPython",
+    "ipywidgets",
+    "ipycanvas",
+    "kagglehub",
+    "matplotlib",
+    "numpy",
+    "openai>=1.65.5",
+    "pandas",
+    "protobuf",
+    "pyperclip",
+    "rapidfuzz",
+    "scikit-learn",
+    "scipy",
+    "seaborn",
+    "segmentation_models_pytorch",
+    "seqeval",
+    "spacy",
+    "timm",
+    "torch",
+    "torchinfo",
+    "torchmetrics",
+    "torchvision",
+    "tqdm",
+    "transformers>=4.49.0",
+    "ultralytics"
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}  # Tell setuptools where to find your packages
+packages = {find = {where = ["src"]}}  # Use find directive for package discovery

@@ -1,0 +1,17 @@
+Sentiment,level_1,Theme
+Negative,Theme 1,dissatisfied (experience)
+Negative,Theme 2,"frustration, aroma, recognition"
+Negative,Theme 3,overcharge
+Negative,Theme 4,unsanitary/dirtiness
+Slightly Negative,Theme 1,dirty
+Slightly Negative,Theme 2,disappointment (core emotion) or continental breakfast (topic)
+Slightly Negative,Theme 3,inconvenience
+Slightly Negative,Theme 4,late/cleanliness/mishandled services
+Very Negative,Theme 1,collision/damage
+Very Negative,Theme 2,disappointment
+Very Negative,Theme 3,dissatisfaction (with service)
+Very Negative,Theme 4,dissatisfied service/facilities
+Very Negative,Theme 5,full (parking lot) / unavailable (spaces)
+Very Positive,Theme 1,awesome (team)
+Very Positive,Theme 2,"cleanliness (pool area), food options (snacks)"
+Very Positive,Theme 3,comfort

@@ -1,0 +1,221 @@
+---
+title: "Data Cleaning and Exploratory Data Analyis"
+author: "Isaac Caelwaerts"
+date: "2025-07-01"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+
+library(dplyr)
+
+Hyatt_Combined_Responses <- Hyatt_Combined_Responses %>% select(where(~ !all(is.na(.))))
+
+
+# Keep only columns with 80% or fewer missing values
+#Hyatt_df <- Hyatt_df[, colMeans(is.na(Hyatt_df)) <= 0.8]
+
+
+colSums(is.na(Hyatt_Combined_Responses))
+
+Hyatt_Combined_Responses <- Hyatt_Combined_Responses[ , colSums(is.na(Hyatt_Combined_Responses)) < 12000]
+
+names(Hyatt_Combined_Responses)
+
+# Columns to KEEP for NLP
+columns_to_keep <- c(
+  "Comments Concatenated",
+  "Additional Feedback on Overall Stay"
+)
+
+# Filter down the DataFrame
+Hyatt_NLP_Ready <- Hyatt_Combined_Responses[, columns_to_keep, drop = FALSE]
+
+# Preview structure
+str(Hyatt_NLP_Ready)
+
+# Install the package if needed
+install.packages("syuzhet")
+library(syuzhet)
+
+# Apply sentiment analysis to your main text column
+Hyatt_NLP_Ready$sentiment_score <- get_sentiment(Hyatt_NLP_Ready$`Comments Concatenated`, method = "syuzhet")
+
+# Preview results
+head(Hyatt_NLP_Ready[, c("Comments Concatenated", "sentiment_score")])
+
+# Load library if not already loaded
+library(syuzhet)
+
+# Generate sentiment scores
+Hyatt_NLP_Ready$sentiment_score <- get_sentiment(Hyatt_NLP_Ready$`Comments Concatenated`, method = "syuzhet")
+
+# Classify into sentiment labels
+Hyatt_NLP_Ready$sentiment_label <- ifelse(
+  Hyatt_NLP_Ready$sentiment_score > 0, "Positive",
+  ifelse(Hyatt_NLP_Ready$sentiment_score < 0, "Negative", "Neutral")
+)
+
+# Preview results
+head(Hyatt_NLP_Ready[, c("Comments Concatenated", "sentiment_score", "sentiment_label")])
+
+Hyatt_NLP_Ready <- na.omit(Hyatt_NLP_Ready)
+
+
+library(dplyr)
+
+Hyatt_NLP <- Hyatt_NLP_Ready
+
+# Basic way to save a data.frame to CSV
+write_csv(df, "Hyatt_NLP.csv")
+write.csv(df, "Hyatt_NLP.csv", row.names = FALSE)
+
+class(Hyatt_NLP)
+
+Hyatt_NLP$sentiment_label <- NULL
+
+
+write.csv(as.data.frame(Hyatt_NLP), "Hyatt_NLP.csv", row.names = FALSE)
+```
+
+
+
+```{r setup, include=FALSE}
+library(reticulate)
+
+# Create (if needed)
+reticulate::virtualenv_create("huggingface_env")
+
+# Activate it
+reticulate::use_virtualenv("huggingface_env", required = TRUE)
+
+reticulate::py_install(c("transformers", "torch", "tqdm"))
+
+transformers <- import("transformers")
+pipeline <- transformers$pipeline
+
+# Load the classification model
+classifier <- pipeline("zero-shot-classification", model = "facebook/bart-large-mnli")
+
+# Define candidate sentiment labels
+labels <- c("Positive", "Neutral", "Negative")
+
+# Apply classifier to one example to test
+result <- classifier("The room was clean but the lighting could be improved.", candidate_labels = labels)
+print(result)
+
+Hyatt_NLP$predicted_sentiment <- sapply(Hyatt_NLP$Survey_feedback, function(text) {
+  result <- classifier(text, candidate_labels = labels)
+  return(result$labels[[1]])  # Top prediction
+})
+
+
+table(Hyatt_Combined_Responses$LikelihoodtoRecommend)
+
+names(Hyatt_Combined_Responses)[names(Hyatt_Combined_Responses) == "Likelihood to Recommend"] <- "LTR"
+table(Hyatt_Combined_Responses$LTR)
+
+# Create a sentiment label using dplyr
+library(dplyr)
+
+names(df)[names(df) == "Likelihood to Recommend"] <- "LTR"
+
+Hyatt_Combined_Responses <- Hyatt_Combined_Responses %>%
+  mutate(Sentiment = case_when(
+    LTR >= 9 ~ "Positive",
+    LTR >= 7 ~ "Neutral",
+    TRUE     ~ "Negative"
+  ))
+
+Hyatt_Combined_Responses <- Hyatt_Combined_Responses[ , colSums(is.na(Hyatt_Combined_Responses)) < 12000]
+
+names(Hyatt_Combined_Responses)
+
+# Columns to KEEP for NLP
+columns_to_keep <- c(
+  "LTR",
+  "Additional Feedback on Overall Stay"
+)
+
+Hyatt_NLP_TEST <- Hyatt_Combined_Responses[, columns_to_keep, drop = FALSE]
+
+Hyatt_NLP_TEST <- na.omit(Hyatt_NLP_TEST)
+
+# Define the sentiment mapping function
+sentiment_label <- function(score) {
+  if (score == 10) {
+    return("Very Positive")
+  } else if (score >= 8) {
+    return("Positive but Critical")
+  } else if (score == 7) {
+    return("Mixed or Neutral")
+  } else if (score >= 5) {
+    return("Slightly Negative")
+  } else if (score >= 3) {
+    return("Negative")
+  } else {
+    return("Very Negative")
+  }
+}
+
+# Apply the function to the LTR column
+Hyatt_NLP_TEST$Sentiment <- sapply(Hyatt_NLP_TEST$LTR, sentiment_label)
+
+
+```
+
+
+
+
+
+```{r}
+library(dplyr)
+library(tidyr)
+
+# Step 1: Rename misspelled columns
+DF <- DF %>%
+  rename(
+    Very_Positive = `Very Poisitve`,
+    Positive_But_Critical = `Poisitve But Critical`
+  )
+
+DF <- DF[1:100, ] 
+
+
+# Step 2: Pivot the sentiment columns to long format and keep only marked rows
+df_long <- DF %>%
+  pivot_longer(
+    cols = c(Very_Positive, Positive_But_Critical, Neutral, Negative, `Very Negative`),
+    names_to = "Sentiment",
+    values_to = "Marker"
+  ) %>%
+  filter(Marker == "v") %>%  # Adjust if marker is stored differently (e.g., TRUE, 1)
+  select(-Marker)
+
+# Step 3: Merge back to keep original structure plus derived sentiment
+DF <- DF %>%
+  mutate(RowID = row_number())
+
+df_long <- df_long %>%
+  mutate(RowID = row_number())
+
+
+df <- df_long[, -c(2, 4)]
+
+write.csv(as.data.frame(df), "First100.csv", row.names = FALSE)
+
+
+df <- data.frame(lapply(df, function(x) {
+  if (is.character(x)) gsub("â€™", "'", x) else x
+}))
+
+
+Hyatt_NLP_TEST <- data.frame(lapply(Hyatt_NLP_TEST, function(x) {
+  if (is.character(x)) gsub("â€™", "'", x) else x
+}))
+
+
+
+```
+
+
