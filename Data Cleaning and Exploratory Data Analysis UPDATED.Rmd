@@ -1,0 +1,235 @@
+---
+title: "Data Cleaning and Exploratory Data Analyis"
+author: "Isaac Caelwaerts"
+date: "2025-07-01"
+output: html_document
+---
+
+# LOADING, MERGING, AND INITIAL CLEANING OF DF
+```{r setup, include=FALSE}
+
+
+library(readr)
+library(vroom)
+library(dplyr)
+
+# Define years and file paths
+years <- 2018:2025
+file_names <- paste0("HySat Responses ", years, ".csv")
+
+# Read and combine, forcing all columns to character
+Hyatt_Combined_Responses <- bind_rows(
+  Map(function(file, year) {
+    df <- vroom(file, col_types = cols(.default = "c"))  # force all columns to character
+    df$Year <- as.character(year)
+    return(df)
+  }, file_names, years)
+)
+
+Hyatt_Combined_Responses <- Hyatt_Combined_Responses %>% select(where(~ !all(is.na(.))))
+
+Hyatt_Combined_Responses <- Hyatt_Combined_Responses[ , colSums(is.na(Hyatt_Combined_Responses)) < 12000]
+
+```
+
+# LTR Based Sentiment Labeling
+```{r setup, include=FALSE}
+
+# Change named of Likelihood to Recommend to LTR for short
+names(Hyatt_Combined_Responses)[names(Hyatt_Combined_Responses) == "Likelihood to Recommend"] <- "LTR"
+
+# Remove Columns more than 12,000 missing values (roughly 60 percent or more NA)
+Hyatt_Combined_Responses <- Hyatt_Combined_Responses[ , colSums(is.na(Hyatt_Combined_Responses)) < 12000]
+
+# Columns to KEEP for NLP
+columns_to_keep <- c(
+  "LTR",
+  "Additional Feedback on Overall Stay"
+)
+
+Hyatt_NLP_TEST <- Hyatt_Combined_Responses[, columns_to_keep, drop = FALSE]
+
+Hyatt_NLP_TEST <- na.omit(Hyatt_NLP_TEST)
+
+# Define the sentiment mapping function
+sentiment_label <- function(score) {
+  if (score == 10) {
+    return("Very Positive")
+  } else if (score >= 8) {
+    return("Positive but Critical")
+  } else if (score == 7) {
+    return("Mixed or Neutral")
+  } else if (score >= 5) {
+    return("Slightly Negative")
+  } else if (score >= 3) {
+    return("Negative")
+  } else {
+    return("Very Negative")
+  }
+}
+
+# Apply the function to the LTR column
+Hyatt_NLP_TEST$Sentiment <- sapply(Hyatt_NLP_TEST$LTR, sentiment_label)
+
+# Remove Encoding Artificats
+Hyatt_NLP_TEST <- data.frame(lapply(Hyatt_NLP_TEST, function(x) {
+  if (is.character(x)) gsub("â€™", "'", x) else x
+}))
+
+write.csv(as.data.frame(Hyatt_NLP_TEST), "Hyatt_LTR_Sentiment.csv", row.names = FALSE)
+```
+
+# CODE TO LOAD AND CLEAN MANUAL SENTIEMNT DATASET
+```{r}
+# CODE TO LOAD AND CLEAN MANUAL SENTIEMNT DATASET
+library(readr)
+library(dplyr)
+library(tidyr)
+
+DF <- read_csv("C:/Users/geoca/OneDrive/Desktop/CAPSTONE/DF.csv")
+
+# Step 1: Rename misspelled columns
+DF <- DF %>%
+  rename(
+    'Very Positive' = `Very Poisitve`,
+    'Positive But Critical' = `Poisitve But Critical`
+  )
+
+# Keep Only First 100 Rows
+DF <- DF[1:100, ] 
+
+# Step 2: Pivot the sentiment columns to long format and keep only marked rows
+df_long <- DF %>%
+  pivot_longer(
+    cols = c('Very Positive', 'Positive But Critical', Neutral, Negative, `Very Negative`),
+    names_to = "Sentiment",
+    values_to = "Marker"
+  ) %>%
+  filter(Marker == "v") %>%  # Adjust if marker is stored differently (e.g., TRUE, 1)
+  select(-Marker)
+
+# Step 3: Merge back to keep original structure plus derived sentiment
+DF <- DF %>%
+  mutate(RowID = row_number())
+
+df_long <- df_long %>%
+  mutate(RowID = row_number())
+
+# Remove Duplicate Columns
+Manual_Sentiment_df <- df_long[, -c(2, 4)]
+
+# Remove Encoding Artifacts
+Manual_Sentiment_df <- data.frame(lapply(Manual_Sentiment_df, function(x) {
+  if (is.character(x)) gsub("â€™", "'", x) else x
+}))
+
+# Save File
+write.csv(as.data.frame(Manual_Sentiment_df), "First100.csv", row.names = FALSE)
+```
+
+#Exploratory Data Analysis 
+```{r}
+
+library(ggplot2)
+
+library(ggplot2)
+
+# Optional: Set factor levels to control order in the plot
+Manual_Sentiment_df$Sentiment <- factor(
+  Manual_Sentiment_df$Sentiment,
+  levels = c("Very Negative", "Negative", "Neutral", "Positive But Critical", "Very Positive")
+)
+
+# Create the bar plot
+ggplot(Manual_Sentiment_df, aes(x = Sentiment)) +
+  geom_bar(fill = "#0073C2FF") +
+  labs(title = "Distribution of Sentiment Categories",
+       x = "Sentiment",
+       y = "Number of Survey Responses") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+Hyatt_NLP_TEST$Sentiment <- factor(
+  Hyatt_NLP_TEST$Sentiment,
+  levels = c("Very Negative","Negative", "Slightly Negative", "Mixed or Neutral", "Positive but Critical", "Very Positive")
+  
+  
+)
+ggplot(Hyatt_NLP_TEST, aes(x = Sentiment)) +
+  geom_bar(fill = "#0073C2FF") +
+  labs(title = "Distribution of Sentiment Categories",
+       x = "Sentiment",
+       y = "Number of Survey Responses") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# If it's a factor, convert to character first, then numeric
+Hyatt_NLP_TEST$LTR <- as.numeric(as.character(Hyatt_NLP_TEST$LTR))
+
+ggplot(Hyatt_NLP_TEST, aes(x = LTR)) +
+  geom_histogram(binwidth = 1, fill = "#56B4E9", color = "white") +
+  scale_x_continuous(breaks = 0:10) +
+  labs(title = "Distribution of LTR Scores",
+       x = "LTR Score (0–10)",
+       y = "Number of Responses") +
+  theme_minimal()
+
+names(Hyatt_NLP_TEST)
+
+Hyatt_NLP_TEST <- Hyatt_NLP_TEST %>%
+  rename(Feedback = `Additional.Feedback.on.Overall.Stay`)
+
+Hyatt_NLP_TEST$Text_Length <- nchar(Hyatt_NLP_TEST$Feedback)
+
+
+ggplot(Hyatt_NLP_TEST, aes(x = Text_Length)) +
+  geom_histogram(binwidth = 10, fill = "#009E73", color = "white") +
+  labs(title = "Distribution of Survey Feedback Lengths",
+       x = "Number of Characters",
+       y = "Number of Responses") +
+  theme_minimal()
+
+library(tidytext)
+library(dplyr)
+library(ggplot2)
+
+# Make sure stop_words is available
+data("stop_words")
+
+# Tokenize, remove stop words, count, and plot
+word_counts <- Hyatt_NLP_TEST %>%
+  unnest_tokens(word, `Feedback`) %>%
+  anti_join(stop_words, by = "word") %>%
+  count(word, sort = TRUE) %>%
+  slice_max(n, n = 20)
+
+# Plot
+ggplot(word_counts, aes(x = reorder(word, n), y = n)) +
+  geom_col(fill = "#0072B2") +
+  coord_flip() +
+  labs(title = "Top 20 Most Common Words (Stop Words Removed)",
+       x = "Word",
+       y = "Frequency") +
+  theme_minimal()
+
+
+
+library(wordcloud)
+
+wordcloud(words = word_counts$word, freq = word_counts$n, max.words = 100, colors = brewer.pal(8, "Dark2"))
+
+
+Hyatt_NLP_TEST %>%
+  unnest_tokens(bigram, Feedback, token = "ngrams", n = 5) %>%
+  count(bigram, sort = TRUE)
+
+
+tidy_df <- Hyatt_NLP_TEST %>%
+  unnest_tokens(word, Feedback) %>%
+  anti_join(stop_words) %>%
+  count(Sentiment, word) %>%
+  bind_tf_idf(word, Sentiment, n) %>%
+  arrange(desc(tf_idf))
+
+```
